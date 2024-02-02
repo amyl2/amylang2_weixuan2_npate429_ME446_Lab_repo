@@ -39,6 +39,15 @@ float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
 
+// DH thetas
+float Th2DH = 0;
+float Th3DH = 0;
+
+// position variables
+float x = 0;
+float y = 0;
+float z = 0;
+
 
 void mains_code(void);
 
@@ -93,12 +102,28 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar3 = theta3motor;
     Simulink_PlotVar4 = 0;
 
+    // Homogenous Transformation matrix H03 for forward kinematics
+    //    float H03[][] = {{cos(theta3motor)*cos(theta1motor), -sin(theta3motor)*cos(theta1motor), -sin(theta1motor), 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor))},
+    //                     {cos(theta3motor)*sin(theta1motor), -sin(theta3motor)*sin(theta1motor), cos(theta1motor), 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor))},
+    //                     {-sin(theta3motor), -cost(theta3motor), 0 , 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254},
+    //                     {0,0,0,1}};
+
+    x = 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    y = 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    z = 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254;
+
+    Th2DH = theta2motor - PI/2;
+    Th3DH = -theta2motor + theta3motor + PI/2;
+
+
+
     mycount++;
 }
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "%.2f %.2f,%.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI, random);
+//        serial_printf(&SerialA, "%.2f %.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI);
+        serial_printf(&SerialA, "DH Thetas: %.2f %.2f %.2f Position: %.2f %.2f %.2f\n\r", printtheta1motor*180/PI, Th2DH*180/PI, Th3DH*180/PI, x, y, z );
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
