@@ -43,6 +43,15 @@ float Simulink_PlotVar4 = 0;
 float Th2DH = 0;
 float Th3DH = 0;
 
+// IK thetas
+float IKTh1 = 0;
+float IKTh2 = 0;
+float IKTh3 = 0;
+
+float IKtheta1motor = 0;
+float IKtheta2motor = 0;
+float IKtheta3motor = 0;
+
 // position variables
 float x = 0;
 float y = 0;
@@ -108,6 +117,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     //                     {-sin(theta3motor), -cost(theta3motor), 0 , 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254},
     //                     {0,0,0,1}};
 
+    // Forward Kinematics
     x = 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254;
@@ -115,7 +125,14 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Th2DH = theta2motor - PI/2;
     Th3DH = -theta2motor + theta3motor + PI/2;
 
+    // Inverse Kinematics
+    IKTh1 = atan2(y,x);
+    IKTh2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+    IKTh3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
 
+    IKtheta1motor = IKTh1;
+    IKtheta2motor = IKTh2 + PI/2;
+    IKtheta3motor = IKTh3 + IKtheta2motor - PI/2;
 
     mycount++;
 }
@@ -123,7 +140,11 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 void printing(void){
     if (whattoprint == 0) {
 //        serial_printf(&SerialA, "%.2f %.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI);
-        serial_printf(&SerialA, "DH Thetas: %.2f %.2f %.2f Position: %.2f %.2f %.2f\n\r", printtheta1motor*180/PI, Th2DH*180/PI, Th3DH*180/PI, x, y, z );
+        serial_printf(&SerialA, "Motor Thetas: %.2f %.2f %.2f \n\r", printtheta1motor*180/PI, printtheta2motor*180/PI, printtheta3motor*180/PI);
+        serial_printf(&SerialA, "Position: %.2f %.2f %.2f  \n\r", x, y, z);
+        serial_printf(&SerialA, "IK DH Thetas: %.2f %.2f %.2f   \n\r", IKTh1*180/PI, IKTh2*180/PI, IKTh3*180/PI);
+        serial_printf(&SerialA, "Motor Theta (IK)s: %.2f %.2f %.2f  \n\r", IKtheta1motor*180/PI, IKtheta2motor*180/PI, IKtheta3motor*180/PI );
+        serial_printf(&SerialA, "----------------\n\r");
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
