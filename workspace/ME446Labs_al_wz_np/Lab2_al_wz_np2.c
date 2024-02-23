@@ -58,12 +58,25 @@ float y = 0;
 float z = 0;
 
 // PD controller constants
-float Kp1 = 10.0;
-float Kp2 = 10.0;
-float Kp3 = 14.0;
-float Kd1 = 0.9;
-float Kd2 = 0.9;
-float Kd3 = 0.9;
+float Kp1 = 20.0;
+float Kp2 = 75;
+float Kp3 = 65;
+float Kd1 = 1.35;
+float Kd2 = 2.35;
+float Kd3 = 2.0;
+
+// PID controller constants
+float thresh = 0.03;
+
+float Kpt1 = 40;
+float Kpt2 = 300;
+float Kpt3 = 250;
+float Kdt1 = 2.1;
+float Kdt2 = 8;
+float Kdt3 = 4;
+float Ki1 = 175;
+float Ki2 = 1000;
+float Ki3 = 2000;
 
 // Other variables for PD control
 float theta_desired = 0.0;
@@ -81,6 +94,21 @@ float Theta3_old = 0;
 float Omega3_old1 = 0;
 float Omega3_old2 = 0;
 float Omega3 = 0;
+
+// PID controller variables
+float Ik1 = 0;
+float Ik2 = 0;
+float Ik3 = 0;
+float Ik1_old = 0;
+float Ik2_old = 0;
+float Ik3_old = 0;
+float error1 = 0;
+float error2 = 0;
+float error3 = 0;
+float error_old1 = 0;
+float error_old2 = 0;
+float error_old3 = 0;
+
 
 void mains_code(void);
 
@@ -131,47 +159,96 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         theta_desired = 0;
     }
 
+
     // IIR
-    Omega1 = (thetamotor1 - Theta1_old)/0.001;
+    Omega1 = (theta1motor - Theta1_old)/0.001;
     Omega1 = (Omega1 + Omega1_old1 + Omega1_old2)/3.0;
-    Theta1_old = thetamotor1;
+    Theta1_old = theta1motor;
     Omega1_old2 = Omega1_old1;
     Omega1_old1 = Omega1;
 
-    Omega2 = (thetamotor2 - Theta2_old)/0.001;
+    Omega2 = (theta2motor - Theta2_old)/0.001;
     Omega2 = (Omega2 + Omega2_old1 + Omega2_old2)/3.0;
-    Theta2_old = thetamotor2;
+    Theta2_old = theta2motor;
     Omega2_old2 = Omega2_old1;
     Omega2_old1 = Omega2;
 
-    Omega3 = (thetamotor3 - Theta3_old)/0.001;
+    Omega3 = (theta3motor - Theta3_old)/0.001;
     Omega3 = (Omega3 + Omega3_old1 + Omega3_old2)/3.0;
-    Theta1_old = thetamotor3;
+    Theta3_old = theta3motor;
     Omega3_old2 = Omega3_old1;
     Omega3_old1 = Omega3;
 
-    // PD controller
-    *tau1 = Kp1*(theta_desired-theta1motor)-Kd*Omega1;
-    *tau2 = Kp2*(theta_desired-theta2motor)-Kd*Omega2;
-    *tau3 = Kp3*(theta_desired-theta3motor)-Kd*Omega3;
 
-    // Saturate the Tau values
+    if (fabs(theta_desired - theta1motor) > thresh) {
+        // PD controller
+        Ik1 = 0;
+        Ik1_old = 0;
+       *tau1 = Kp1*(theta_desired-theta1motor)-Kd1*Omega1;
+    } else {
+        // PID controller
+        error1 = theta_desired - theta1motor;
+        Ik1_old = Ik1;
+        Ik1 = Ik1_old + (error1 + error_old1)/2 * 0.001;
+        error_old1 = error1;
+        *tau1 = Kpt1*(theta_desired-theta1motor)-Kdt1*Omega1 + Ki1*Ik1;
+
+    }
+
+    if (fabs(theta_desired - theta2motor) > thresh) {
+        // PD controller
+        Ik2 = 0;
+        Ik2_old = 0;
+        *tau2 = Kp2*(theta_desired-theta2motor)-Kd2*Omega2;
+    } else {
+        // PID controller
+        error2 = theta_desired - theta2motor;
+        Ik2_old = Ik2;
+        Ik2 = Ik2_old + (error2 + error_old2)/2 * 0.001;
+        error_old2 = error2;
+        *tau2 = Kpt2*(theta_desired-theta2motor)-Kdt2*Omega2 + Ki2*Ik2;
+    }
+
+    if (fabs(theta_desired - theta3motor) > thresh) {
+        // PD controller
+        Ik3 = 0;
+        Ik3_old = 0;
+        *tau3 = Kp3*(theta_desired-theta3motor)-Kd3*Omega3;
+    } else {
+        // PID controller
+        error3 = theta_desired - theta3motor;
+//        Ik3 = Ik3 + (error3 + error_old3)/2 * 0.001;
+        Ik3_old = Ik3;
+        Ik3 = Ik3_old + (error3 + error_old3)/2 * 0.001;
+        error_old3 = error3;
+        *tau3 = Kpt3*(theta_desired-theta3motor)-Kdt3*Omega3 + Ki3*Ik3;
+    }
+
+
+
+//     Saturate the Tau values
     if (*tau1 > 5.0){
         *tau1 = 5.0;
+        Ik1 = Ik1_old;
     } else if ( *tau1 < -5.0 ){
         *tau1 = -5.0;
+        Ik1 = Ik1_old;
     }
 
     if (*tau2 > 5.0){
         *tau2 = 5.0;
+        Ik2 = Ik2_old;
     } else if ( *tau2 < -5.0 ){
         *tau2 = -5.0;
+        Ik2 = Ik2_old;
     }
 
     if (*tau3 > 5.0){
         *tau3 = 5.0;
+        Ik3 = Ik3_old;
     } else if ( *tau3 < -5.0 ){
         *tau3 = -5.0;
+        Ik3 = Ik3_old;
     }
 
 

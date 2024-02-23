@@ -6,9 +6,9 @@
  *
  * Code generation for model "simulink5ms_plotAndGains".
  *
- * Model version              : 11.0
+ * Model version              : 11.1
  * Simulink Coder version : 9.9 (R2023a) 19-Nov-2022
- * C source code generated on : Fri Jan 26 11:05:59 2024
+ * C source code generated on : Fri Feb 23 09:32:30 2024
  *
  * Target selection: sldrt.tlc
  * Note: GRT includes extra infrastructure and instrumentation for prototyping
@@ -985,7 +985,7 @@ struct P_simulink5ms_plotAndGains_T_ {
   real_T Gain2_Gain_h;                 /* Expression: 1
                                         * Referenced by: '<S2>/Gain2'
                                         */
-  real_T Value_16bit1_Value;           /* Expression: 4
+  real_T Value_16bit1_Value;           /* Expression: 1
                                         * Referenced by: '<Root>/Value_16bit1'
                                         */
   real_T Gain5_Gain;                   /* Expression: 1
