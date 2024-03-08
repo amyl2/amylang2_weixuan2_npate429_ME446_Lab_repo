@@ -182,11 +182,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //    theta_desired_ddot = trajectory_array[2];
 //    free(trajectory_array);
 
-    float* trajectory_fun = fun_trajectory((mycount%3000)/1000.0);
+    float* trajectory_fun = fun_trajectory((mycount)/1000.0);
     theta_desired1 = trajectory_fun[0];
     theta_desired2 = trajectory_fun[1];
     theta_desired3 = trajectory_fun[2];
     free(trajectory_fun);
+
+//    if ((mycount)/1000 < 2) {
+//        theta_desired1 = 0;
+//        theta_desired2 = 0;
+//        theta_desired3 = 0;
+//    }
 
     // IIR
     Omega1 = (theta1motor - Theta1_old)/0.001;
@@ -208,7 +214,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_old1 = Omega3;
 
 
-    if (fabs(theta_desired - theta1motor) > thresh) {
+    if (fabs(theta_desired1 - theta1motor) > thresh) {
         // PD controller
         Ik1 = 0;
         Ik1_old = 0;
@@ -218,8 +224,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     } else {
         // PID controller
-        error1 = theta_desired - theta1motor;
-        Ik1_old = Ik1;
+        error1 = theta_desired1 - theta1motor;
+
         Ik1 = Ik1_old + (error1 + error_old1)/2 * 0.001;
         error_old1 = error1;
 //        *tau1 = Kpt1*(theta_desired-theta1motor)-Kdt1*Omega1 + Ki1*Ik1;
@@ -228,7 +234,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     }
 
-    if (fabs(theta_desired - theta2motor) > thresh) {
+    if (fabs(theta_desired2 - theta2motor) > thresh) {
         // PD controller
         Ik2 = 0;
         Ik2_old = 0;
@@ -237,8 +243,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         *tau2 = Kp2*(theta_desired2-theta2motor)-Kd2*Omega2;
     } else {
         // PID controller
-        error2 = theta_desired - theta2motor;
-        Ik2_old = Ik2;
+        error2 = theta_desired2 - theta2motor;
         Ik2 = Ik2_old + (error2 + error_old2)/2 * 0.001;
         error_old2 = error2;
 //        *tau2 = Kpt2*(theta_desired-theta2motor)-Kdt2*Omega2 + Ki2*Ik2;
@@ -246,7 +251,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         *tau2 = Kpt2*(theta_desired2-theta2motor)-Kdt2*Omega2 + Ki2*Ik2;
     }
 
-    if (fabs(theta_desired - theta3motor) > thresh) {
+    if (fabs(theta_desired3 - theta3motor) > thresh) {
         // PD controller
         Ik3 = 0;
         Ik3_old = 0;
@@ -255,9 +260,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         *tau3 = Kp3*(theta_desired3-theta3motor)-Kd3*Omega3;
     } else {
         // PID controller
-        error3 = theta_desired - theta3motor;
+        error3 = theta_desired3 - theta3motor;
 //        Ik3 = Ik3 + (error3 + error_old3)/2 * 0.001;
-        Ik3_old = Ik3;
         Ik3 = Ik3_old + (error3 + error_old3)/2 * 0.001;
         error_old3 = error3;
 //        *tau3 = Kpt3*(theta_desired-theta3motor)-Kdt3*Omega3 + Ki3*Ik3;
@@ -331,17 +335,25 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     IKtheta2motor = IKTh2 + PI/2;
     IKtheta3motor = IKTh3 + IKtheta2motor - PI/2;
 
+
+    Ik1_old = Ik1;
+    Ik2_old = Ik2;
+    Ik3_old = Ik3;
     mycount++;
 }
 
 void printing(void){
     if (whattoprint == 0) {
 //        serial_printf(&SerialA, "%.2f %.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI);
-        serial_printf(&SerialA, "Motor Thetas: %.2f %.2f %.2f \n\r", printtheta1motor*180/PI, printtheta2motor*180/PI, printtheta3motor*180/PI);
-        serial_printf(&SerialA, "Position: %.2f %.2f %.2f  \n\r", x, y, z);
-        serial_printf(&SerialA, "IK DH Thetas: %.2f %.2f %.2f   \n\r", IKTh1*180/PI, IKTh2*180/PI, IKTh3*180/PI);
-        serial_printf(&SerialA, "Motor Theta (IK)s: %.2f %.2f %.2f  \n\r", IKtheta1motor*180/PI, IKtheta2motor*180/PI, IKtheta3motor*180/PI );
-        serial_printf(&SerialA, "----------------\n\r");
+
+
+//        serial_printf(&SerialA, "Motor Thetas: %.2f %.2f %.2f \n\r", printtheta1motor*180/PI, printtheta2motor*180/PI, printtheta3motor*180/PI);
+//        serial_printf(&SerialA, "Position: %.2f %.2f %.2f  \n\r", x, y, z);
+//        serial_printf(&SerialA, "IK DH Thetas: %.2f %.2f %.2f   \n\r", IKTh1*180/PI, IKTh2*180/PI, IKTh3*180/PI);
+//        serial_printf(&SerialA, "Motor Theta (IK)s: %.2f %.2f %.2f  \n\r", IKtheta1motor*180/PI, IKtheta2motor*180/PI, IKtheta3motor*180/PI );
+//        serial_printf(&SerialA, "----------------\n\r");
+
+        serial_printf(&SerialA, "Position: %.2f %.2f %.2f  \n\r", theta_desired1, theta_desired2, theta_desired3);
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
@@ -376,24 +388,41 @@ float* fun_trajectory(float t){
     float t0 = 0;
     float t02 = 1;
     float t_total = 1;
-    if (t>= 0 && t<=1) {
-        float x = 0.25;
-        float y = 0;
-        float z1 = (0.50-0.35)*((t-t0)/t_total) + 0.35;
-        theta_desired1 = atan2(y,x);
-        theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
-        theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
-        }
-    else if (t > 1 && t<=2 ) {
-        float x = 0.25;
-        float y = 0;
-        float z2 = (0.35-0.5)*((t-t02)/t_total) + 0.5;
-        theta_desired1 = atan2(y,x);
-        theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
-        theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
-    }
-    *res = theta_desired1;
-    *(res + 1) = theta_desired2;
-    *(res + 2) = theta_desired3;
+//    if (t>= 0 && t<=) {
+//        float x = 0.25;
+//        float y = 0;
+//        float z1 = (0.50-0.35)*((t-t0)/t_total) + 0.35;
+//        theta_desired1 = atan2(y,x);
+//        theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+//        theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
+//        }
+//    else if (t > 1 && t<=2 ) {
+//        float x = 0.25;
+//        float y = 0;
+//        float z2 = (0.35-0.5)*((t-t02)/t_total) + 0.5;
+//        theta_desired1 = atan2(y,x);
+//        theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+//        theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
+//    }
+
+    float y_max = 0.15;
+    float y_min = y_max*(-1);
+    float z_max = 0.5334;
+    float z_min = 0.127;
+    float z = (z_max - z_min)*cos(PI*t/3.5)/2 + (z_max + z_min)/2;
+    float y = (y_max - y_min)*sin(2*PI*t/3.5)/2 + (y_max + y_min)/2;
+    float x = 0.3937;
+
+    theta_desired1 = atan2(y,x);
+    theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+    theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
+    
+    float IKtheta1motor1 = theta_desired1;
+    float IKtheta2motor2 = theta_desired2 + PI/2;
+    float IKtheta3motor3 = theta_desired3 + IKtheta2motor2 - PI/2;
+
+    *res = IKtheta1motor1;
+    *(res + 1) = IKtheta2motor2;
+    *(res + 2) = IKtheta3motor3;
     return res;
 }
