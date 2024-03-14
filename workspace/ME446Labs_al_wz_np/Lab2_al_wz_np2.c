@@ -144,7 +144,6 @@ float theta_desired2 = 0.0;
 float theta_desired3 = 0.0;
 
 /** Section True/False Parameters */
-bool Feed_Forwards = false;
 bool cubic_wave = false;
 bool fun = false;
 
