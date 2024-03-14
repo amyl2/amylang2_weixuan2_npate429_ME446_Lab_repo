@@ -496,37 +496,6 @@ void printing(void){
     }
 }
 
-void fun_trajectory(float t){
-    /** 
-     * Creating a figure 8 trajectory and solving its Inverse Kinematics
-     * for the respective motor thetas.
-     * 
-     * We first begin by setting our x, y, and z positions at the given time
-     * input t. Afterwards, we solve out our inverse kinematics in order to
-     * calculate the necessary motor thetas.
-    */
-
-    float y_max = 0.15;
-    float y_min = y_max*(-1);
-    float z_max = 0.5334;
-    float z_min = 0.127;
-    float z = (z_max - z_min)*cos(PI*t/3.5)/2 + (z_max + z_min)/2;
-    float y = (y_max - y_min)*sin(2*PI*t/3.5)/2 + (y_max + y_min)/2;
-    float x = 0.3937;
-
-    theta_desired1 = atan2(y,x);
-    theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
-    theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
-    
-    float IKtheta1motor1 = theta_desired1;
-    float IKtheta2motor2 = theta_desired2 + PI/2;
-    float IKtheta3motor3 = theta_desired3 + IKtheta2motor2 - PI/2;
-
-    theta_desired1 = IKtheta1motor1;
-    theta_desired2 = IKtheta2motor2;
-    theta_desired3 = IKtheta3motor3;
-}
-
 void initialization(float t1m,float t2m) {
     /** Necessary Initialization 
      * 
@@ -535,6 +504,10 @@ void initialization(float t1m,float t2m) {
      * 
      * updates theta1 & theta2 array with current theta motor values
      * sets blinking LEDs on Control Card and Emergency Stop Box
+     * 
+     * Input variables: 
+     *              t1m : Theta 1 Motor [rad]
+     *              t2m : Theta 2 Motor [rad]
     */
 
     // save past states
@@ -561,6 +534,9 @@ void square_wave_trajectory(float t) {
      * If the time in seconds given by t is less than 1, we set
      * theta_desired to be pi/6. Otherwise, theta_desired is set
      * to 0.
+     * 
+     * Input variable: 
+     *             t : time [seconds]
      */
 
     if (t < 1) {
@@ -579,6 +555,9 @@ void cubic_wave_trajectory(float t) {
      * forward control is used in this instance so theta_dot
      * and theta_double_dot is also calculated for future
      * calculations.
+     * 
+     * Input variable: 
+     *              t : time [seconds]
     */
 
     if (t>= 0 && t<=1) {
@@ -596,4 +575,38 @@ void cubic_wave_trajectory(float t) {
         theta_desired_dot = 0.0;
         theta_desired_ddot = 0.0;
     }
+}
+
+void fun_trajectory(float t){
+    /** 
+     * Creating a figure 8 trajectory and solving its Inverse Kinematics
+     * for the respective motor thetas.
+     * 
+     * We first begin by setting our x, y, and z positions at the given time
+     * input t. Afterwards, we solve out our inverse kinematics in order to
+     * calculate the necessary motor thetas.
+     * 
+     * Input variable: 
+     *             t : time [seconds]
+    */
+
+    float y_max = 0.15;
+    float y_min = y_max*(-1);
+    float z_max = 0.5334;
+    float z_min = 0.127;
+    float z = (z_max - z_min)*cos(PI*t/3.5)/2 + (z_max + z_min)/2;
+    float y = (y_max - y_min)*sin(2*PI*t/3.5)/2 + (y_max + y_min)/2;
+    float x = 0.3937;
+
+    theta_desired1 = atan2(y,x);
+    theta_desired2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+    theta_desired3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
+    
+    float IKtheta1motor1 = theta_desired1;
+    float IKtheta2motor2 = theta_desired2 + PI/2;
+    float IKtheta3motor3 = theta_desired3 + IKtheta2motor2 - PI/2;
+
+    theta_desired1 = IKtheta1motor1;
+    theta_desired2 = IKtheta2motor2;
+    theta_desired3 = IKtheta3motor3;
 }
