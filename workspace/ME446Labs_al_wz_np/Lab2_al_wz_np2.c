@@ -182,17 +182,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     */
 
     /* uncomment below lines to have the CRS Robot Arm follow a square-wave trajectory! */
-    // t = (mycount%3000)/1000;
+    // t = (mycount%3000)/1000.0;
     // square_wave_trajectory(t);
 
     /* uncomment below lines to have the CRS Robot Arm follow a cubic-wave trajectory! */
     // cubic_wave = true;
-    // t = (mycount%3000)/1000;
+    // t = (mycount%3000)/1000.0;
     // cubic_wave_trajectory(t);
 
     /* uncomment below lines to have the CRS Robot Arm follow a fun-wave trajectory! */
     fun = true;
-    t = (mycount)/1000;
+    t = (mycount)/1000.0;
     fun_trajectory(t);
 
 
