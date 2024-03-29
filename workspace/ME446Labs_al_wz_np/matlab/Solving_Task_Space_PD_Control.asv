@@ -8,10 +8,36 @@ syms JT_11 JT_12 JT_13 JT_21 JT_22 JT_23 JT_31 JT_32 JT_33
 
 JT = [ JT_11 JT_12 JT_13; 
        JT_21 JT_22 JT_23;
-       JT_31 JT_11 JT_11]
+       JT_31 JT_32 JT_33];
 
 wut = [KPx*(xde-x) + KDx*(xdd-xd);
        KPy*(yde-y) + KDy*(ydd-yd);
-       KPz*(zde-z) + KDz*(zdd-zd)]
+       KPz*(zde-z) + KDz*(zdd-zd)];
 
-J_t*wut
+JT*wut
+
+syms Xcmd Ycmd Zcmd
+
+x = [0; 0; Zcmd];
+JT*x
+
+syms tx ty tz
+
+R1 = [cos(tz), -sin(tz), 0;
+      sin(tz), cos(tz), 0;
+      0, 0, 1];
+R2 = [1, 0, 0;
+      0, cos(tx), -sin(tx);
+      0 sin(tx), cos(tx)];
+R3 = [cos(ty), 0, sin(ty);
+      0, 1, 0;
+      -sin(ty), 0, cos(ty)];
+
+RWN = R1*R2*R3;
+
+KP = [KPx 0 0;
+      0 KPy 0;
+      0 0 KPz];
+KD = [KDx 0 0;
+      0 KDy 0;
+      0 0 KPz];

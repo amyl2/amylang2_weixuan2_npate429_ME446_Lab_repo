@@ -148,21 +148,21 @@ float u_fric2 = 0.0;
 float u_fric3 = 0.0;
 
 float fric_fac1 = 0.45;
-float fric_fac2 = 1.5;
+float fric_fac2 = 1.0;
 float fric_fac3 = 1.7;
 
 //// Task Space constants
-float KPx = 0.0;
-float KPy = 0.0;
-float KPz = 0.0;
+float KPx = 280.0;
+float KPy = 150.0;
+float KPz = 220.0;
 
-float KDx = 0.0;
-float KDy = 0.0;
-float KDz = 0.0;
+float KDx = 19.0;
+float KDy = 12.0;
+float KDz = 12.0;
 
-float xde = 0.0;
+float xde = 0.35;
 float yde = 0.0;
-float zde = 0.0;
+float zde = 0.40;
 
 float xdd = 0.0;
 float ydd = 0.0;
@@ -225,6 +225,44 @@ float RT31 = 0;
 float RT32 = 0;
 float RT33 = 0;
 
+// Feedforward force term
+float Zcmd_offset = 10;
+float Zcmd_force = 0;
+float Zcmd = 0;
+float Kt = 6.0;
+
+// Impedance control (axis rotation)
+float tx = 0.0;
+float ty = 0.0;
+float tz = 0.0;
+
+float ctx = 0.0;
+float cty = 0.0;
+float ctz = 0.0;
+float stx = 0.0;
+float sty = 0.0;
+float stz = 0.0;
+
+float x_error = 0.0;
+float y_error = 0.0;
+float z_error = 0.0;
+float xd_error = 0.0;
+float yd_error = 0.0;
+float zd_error = 0.0;
+
+// straight line traj
+float delta_x = 0.0;
+float delta_y = 0.0;
+float delta_z = 0.1;
+float xa = 0;
+float ya = 0;
+float za = 0.3;
+float xb = 0;
+float yb = 0;
+float zb = 0.4;
+
+float t_total = 1.0;
+//float speed_des = 0.2;
 
 // Functions
 float* trajectory(float t);
@@ -267,6 +305,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     }
 
+
+
     if ((mycount%500)==0) {
         UARTprint = 1;
         GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Blink LED on Control Card
@@ -279,6 +319,31 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //    } else {
 //        theta_desired = 0;
 //    }
+
+        // Desired step xyz generation
+//        if ((mycount%4000) < 2000) {
+//            xde = 0.40;
+//            yde = 0.0;
+//            zde = 0.35;
+//
+//        } else {
+//            xde = 0.30;
+//            yde = 0.15;
+//            zde = 0.45;
+//        }
+
+    // Desired line wave generation
+        if ((mycount%(2000*t_total)) < 1000*t_total) {
+            xde = -delta_x*(mycount%(2000*t_total))/(t_total*1000) + xb;
+            yde = -delta_y*(mycount%(2000*t_total))/(t_total*1000) + yb;
+            zde = -delta_z*(mycount%(2000*t_total))/(t_total*1000) + zb;
+        } else {
+            xde = delta_x*(mycount%(2000*t_total))/(t_total*1000) + xa;
+            yde = delta_y*(mycount%(2000*t_total))/(t_total*1000) + ya;
+            zde = delta_z*(mycount%(2000*t_total))/(t_total*1000) + za;
+        }
+
+
 
 //    float* trajectory_array = trajectory((mycount%3000)/1000.0);
 //    theta_desired = trajectory_array[0];
@@ -352,6 +417,22 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     RT13 = R31 = -cosx*siny;
     RT23 = R32 = sinx;
     RT33 = R33 = cosx*cosy;
+
+    // for impedance control
+    ctx = cos(tx);
+    cty = cos(ty);
+    ctz = cos(tz);
+    stx = sin(tx);
+    sty = sin(ty);
+    stz = sin(tz);
+    x_error = xde-x;
+    y_error = yde-y;
+    z_error = zde-z;
+
+    xd_error = xdd-xd;
+    yd_error = ydd-yd;
+    zd_error = zdd-zd;
+
     // Jacobian Transpose
     cosq1 = cos(theta1motor);
     sinq1 = sin(theta1motor);
@@ -404,7 +485,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
 
 
-
+    Zcmd = Zcmd_offset + Zcmd_force;
     if (fabs(theta_desired1 - theta1motor) > thresh) {
         // PD controller
         Ik1 = 0;
@@ -413,8 +494,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau1 = J1*theta_desired_ddot + Kp1*(theta_desired-theta1motor)+Kd1*(theta_desired_dot-Omega1);
 //        *tau1 = Kp1*(theta_desired1-theta1motor)-Kd1*Omega1;
 //        *tau1 = u_fric1;
-        *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1;
-
+//        *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
+        *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
 
     } else {
         // PID controller
@@ -426,7 +507,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau1 = J1*theta_desired_ddot+ Kpt1*(theta_desired-theta1motor)+Kdt1*(theta_desired_dot-Omega1) + Ki1*Ik1;
 //        *tau1 = Kpt1*(theta_desired1-theta1motor)-Kdt1*Omega1 + Ki1*Ik1;
 //        *tau1 = u_fric1;
-        *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1;
+//        *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
+        *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
 
 
     }
@@ -439,7 +521,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau2 = J2*theta_desired_ddot + Kp2*(theta_desired-theta2motor)+Kd2*(theta_desired_dot-Omega2);
 //        *tau2 = Kp2*(theta_desired2-theta2motor)-Kd2*Omega2;
 //        *tau2 = u_fric2;
-        *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2;
+//        *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
+        *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
 
     } else {
         // PID controller
@@ -450,7 +533,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau2 = J2*theta_desired_ddot+ Kpt2*(theta_desired-theta2motor)+Kdt2*(theta_desired_dot-Omega2) + Ki2*Ik2;
 //        *tau2 = Kpt2*(theta_desired2-theta2motor)-Kdt2*Omega2 + Ki2*Ik2;
 //        *tau2 = u_fric2;
-        *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2;
+//        *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
+        *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
 
     }
 
@@ -462,7 +546,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau3 = J3*theta_desired_ddot + Kp3*(theta_desired-theta3motor)+Kd3*(theta_desired_dot-Omega3);
 //        *tau3 = Kp3*(theta_desired3-theta3motor)-Kd3*Omega3;
 //        *tau3 = u_fric3;
-        *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3;
+//        *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
+        *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
     } else {
         // PID controller
         error3 = theta_desired3 - theta3motor;
@@ -473,7 +558,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        *tau3 = J3*theta_desired_ddot+ Kpt3*(theta_desired-theta3motor)+Kdt3*(theta_desired_dot-Omega3) + Ki3*Ik3;
 //        *tau3 = Kpt3*(theta_desired3-theta3motor)-Kdt3*Omega3 + Ki3*Ik3;
 //        *tau3 = u_fric3;
-        *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3;
+//        *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
+        *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
 
     }
 
@@ -509,10 +595,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     printtheta2motor = theta2motor;
     printtheta3motor = theta3motor;
 
-    Simulink_PlotVar1 = theta1motor;
-    Simulink_PlotVar2 = theta2motor;
-    Simulink_PlotVar3 = theta3motor;
-    Simulink_PlotVar4 = theta_desired;
+    Simulink_PlotVar1 = x;
+    Simulink_PlotVar2 = xde;
+    Simulink_PlotVar3 = y;
+    Simulink_PlotVar4 = yde;
 
     // Plot erros
 //    Simulink_PlotVar1 = theta_desired-theta1motor;
