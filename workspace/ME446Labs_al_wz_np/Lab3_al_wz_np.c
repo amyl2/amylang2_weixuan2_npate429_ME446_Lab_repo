@@ -234,7 +234,7 @@ float Kt = 6.0;
 // Impedance control (axis rotation)
 float tx = 0.0;
 float ty = 0.0;
-float tz = 0.0;
+float tz = PI/4;
 
 float ctx = 0.0;
 float cty = 0.0;
@@ -254,14 +254,14 @@ float zd_error = 0.0;
 float delta_x = 0.0;
 float delta_y = 0.0;
 float delta_z = 0.1;
-float xa = 0;
-float ya = 0;
+float xa = 0.35;
+float ya = 0.0;
 float za = 0.3;
-float xb = 0;
-float yb = 0;
+float xb = 0.35;
+float yb = 0.0;
 float zb = 0.4;
 
-float t_total = 1.0;
+int t_total = 2;
 //float speed_des = 0.2;
 
 // Functions
@@ -333,16 +333,15 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        }
 
     // Desired line wave generation
-        if ((mycount%(2000*t_total)) < 1000*t_total) {
-            xde = -delta_x*(mycount%(2000*t_total))/(t_total*1000) + xb;
-            yde = -delta_y*(mycount%(2000*t_total))/(t_total*1000) + yb;
-            zde = -delta_z*(mycount%(2000*t_total))/(t_total*1000) + zb;
+        if ((mycount%(2000*t_total)) < 1000.0*t_total) {
+            xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
+            yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
+            zde = (-delta_z*(mycount%(2000*t_total)))/(t_total*1000.0) + zb;
         } else {
-            xde = delta_x*(mycount%(2000*t_total))/(t_total*1000) + xa;
-            yde = delta_y*(mycount%(2000*t_total))/(t_total*1000) + ya;
-            zde = delta_z*(mycount%(2000*t_total))/(t_total*1000) + za;
+            xde = (delta_x*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + xa;
+            yde = (delta_y*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + ya;
+            zde = (delta_z*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + za;
         }
-
 
 
 //    float* trajectory_array = trajectory((mycount%3000)/1000.0);
