@@ -272,52 +272,52 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     /** necessary initialization */
     initialization(theta1motor, theta2motor);
 
-    /** Creating desired waves 
-         * 
+    /** Creating desired waves
+         *
          * This section deals with generating trajectories or desired waveforms that the CRS
-         * Robot Arm will follow during its operation. 
-         * 
-         * Toggle commenting statements in order to choose the trajectory to follow! 
+         * Robot Arm will follow during its operation.
+         *
+         * Toggle commenting statements in order to choose the trajectory to follow!
          * By uncommenting or commenting specific lines of code, you can select different
          * trajectory profiles such as step,or straight line.
-         *  
+         *
          * Note: Only one trajectory should be uncommented at all times to ensure that the
          * robot arm follows the intended path. Mixing multiple trajectories or waveforms
          * can lead to unpredictable or undesired motion.
         */
 
     /* Desired step xyz generation */
-    //    if ((mycount%4000) < 2000) {
-    //        xde = 0.40;
-    //        yde = 0.0;
-    //        zde = 0.35;
-
-    //    } else {
-    //        xde = 0.30;
-    //        yde = 0.15;
-    //        zde = 0.45;
-    //    }
+//        if ((mycount%4000) < 2000) {
+//            xde = 0.40;
+//            yde = 0.0;
+//            zde = 0.35;
+//
+//        } else {
+//            xde = 0.30;
+//            yde = 0.15;
+//            zde = 0.45;
+//        }
 
     /* Desired line wave generation */
     if ((mycount%(2000*t_total)) < 1000.0*t_total) {
-                xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
-                yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
-                zde = (-delta_z*(mycount%(2000*t_total)))/(t_total*1000.0) + zb;
-            } else {
-                xde = (delta_x*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + xa;
-                yde = (delta_y*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + ya;
-                zde = (delta_z*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + za;
-            }
+        xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
+        yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
+        zde = (-delta_z*(mycount%(2000*t_total)))/(t_total*1000.0) + zb;
+    } else {
+        xde = (delta_x*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + xa;
+        yde = (delta_y*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + ya;
+        zde = (delta_z*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + za;
+    }
 
     /** Infinite Impulse Response
      *
      * The first section implements the Infinite Impulse Response (IIR) filtering technique
-     * to calculate raw angular velocity (Omega) optimally. The second section implements the IIR 
+     * to calculate raw angular velocity (Omega) optimally. The second section implements the IIR
      * filter for the x, y, and z coordinate system velocities.
      *
      * Omega, representing angular velocity, is first found by using a simple difference
      * in thetas equation for a basic estimation. Afterwards, an Infinite Impulse Response (IIR)
-     * averaging filter is used to filer and smoothen the omega calculation. On the second section, 
+     * averaging filter is used to filer and smoothen the omega calculation. On the second section,
      * similar calculations are done for the different coordinate system.
      *
      * This ensures that the values used for later control calculations are more
@@ -401,7 +401,6 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     JT_32 = -0.254*sinq1*sinq3;
     JT_33 = -0.254*cosq3;
 
-
     /** Friction
      *
      *
@@ -439,7 +438,6 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     u_fric2 = u_fric2*fric_fac2;
     u_fric3 = u_fric3*fric_fac3;
 
-
     // Zcmd is used to offset gravity and apply/cancel an external force if required
     Zcmd = Zcmd_offset + Zcmd_force;
 
@@ -450,11 +448,14 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
      *        - fric_test          : Boolean for desired friction cancellation test
      *        - TS_Feed_Forwards   : Boolean for desired Feed Forwards test
      *        - impedance_control  : Boolean for desired Impedance Control test
+     *
+     * Note: Only one test should be true at all times to ensure that the
+     * robot arm follows the intended path. Not doing so may result in undesired behavior.
     */
 
     bool fric_test = false;
     bool TS_Feed_Forwards = false;
-    bool impedance_control = false;
+    bool impedance_control = true;
 
     if (fric_test) {
         *tau1 = u_fric1;
@@ -469,22 +470,6 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
         *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
     }
-    // /* Motor 1 */
-    // *tau1 = u_fric1;
-    // // *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
-    // // *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
-
-
-    // /* Motor 2 */
-    // *tau2 = u_fric2;
-    // // *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
-    // // *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
-
-
-    // /* Motor 3 */
-    // *tau3 = u_fric3;
-    // // *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
-    // // *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
 
     /** Saturate the Torque Values
      *
@@ -493,7 +478,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
      * excessive stress on the motors and maintain safe operation
      * of the robot.
      *
-     * This snippit caps the torque value at +/- 5.
+     * This snippet caps the torque value at +/- 5.
      */
 
     /* Motor 1 */
@@ -541,41 +526,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar1 = theta1motor;
     Simulink_PlotVar2 = theta2motor;
     Simulink_PlotVar3 = theta3motor;
-    Simulink_PlotVar4 = tau1;
-
-    /** Forward Kinematics (simulation)
-     *
-     * Although this code is not involved in controlling the CRS
-     * robot arm, it is imporant to solve out the forwards kinematics
-     * in order to calculate check that the positions and DH angles
-     * of the end-effector are as expected.
-     *
-     * We define x,y,z positions [meters] as well as the DH theta values [rad]
-     * based on our previous calculations in lab 1.
-    */
-    x = 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
-    y = 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
-    z = 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254;
-
-    Th2DH = theta2motor - PI/2;
-    Th3DH = -theta2motor + theta3motor + PI/2;
-
-    /** Inverse Kinematics (control)
-     *
-     * Although this code is not used in controlling the CRS
-     * robot arm, it is imporant to solve out the inverse kinematics
-     * in order to calculate check that the motor angles are as expected.
-     *
-     * We define DH theta values [rad] as well as motor theta values [rad]
-     * for all three motors based on our previous calculations done in lab 1.
-    */
-    IKTh1 = atan2(y,x);
-    IKTh2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
-    IKTh3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
-
-    IKtheta1motor = IKTh1;
-    IKtheta2motor = IKTh2 + PI/2;
-    IKtheta3motor = IKTh3 + IKtheta2motor - PI/2;
+    Simulink_PlotVar4 = theta1motor;
 
     /** Updating variables for next iteration of the loop
      *
@@ -620,6 +571,39 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     // for overall loop
     mycount++;
+
+    /** Forward Kinematics (simulation)
+     *
+     * This code is used to solve out the forwards kinematics
+     * in order to calculate x, y, and z, and it could also be used to
+     * check that the positions and DH angles of the end-effector are as expected.
+     *
+     * We define x,y,z positions [meters] as well as the DH theta values [rad]
+     * based on our previous calculations in lab 1.
+    */
+    x = 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    y = 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
+    z = 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254;
+
+    Th2DH = theta2motor - PI/2;
+    Th3DH = -theta2motor + theta3motor + PI/2;
+
+    /** Inverse Kinematics (control)
+     *
+     * Although this code is not used in controlling the CRS
+     * robot arm, it is imporant to solve out the inverse kinematics
+     * in order to calculate check that the motor angles are as expected.
+     *
+     * We define DH theta values [rad] as well as motor theta values [rad]
+     * for all three motors based on our previous calculations done in lab 1.
+    */
+    IKTh1 = atan2(y,x);
+    IKTh2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
+    IKTh3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
+
+    IKtheta1motor = IKTh1;
+    IKtheta2motor = IKTh2 + PI/2;
+    IKtheta3motor = IKTh3 + IKtheta2motor - PI/2;
 }
 
 void printing(void){
