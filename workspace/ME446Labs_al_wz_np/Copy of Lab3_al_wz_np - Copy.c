@@ -14,9 +14,7 @@
 float offset_Enc2_rad = -0.42;
 float offset_Enc3_rad = 0.23;
 
-
 /** ********** Global variables ********** **/
-
 /** Initialization Variables */
 // The variable mycount keeps tract of the number of times the lab function has been run.
 long mycount = 0;
@@ -62,83 +60,27 @@ float x = 0;
 float y = 0;
 float z = 0;
 
-/** PD Controller Constants */
-// Kp constants for motor 1 (M1), motor 2 (M2), and motor 3 (M3) respectively
-float Kp1 = 20.0;
-float Kp2 = 75;
-float Kp3 = 65;
-
-// Kd constants for motor 1, motor 2, and motor 3 respectively
-float Kd1 = 1.35;
-float Kd2 = 2.35;
-float Kd3 = 2.0;
-
-/** PID Control Constants */
-// threshhold value for which to begin intergal control
-float thresh = 0.03;
-
-// Kp and Kd constants for M1, M2, & M3 using integral control
-//
-// note: These values are different than previous PD controller constant values.
-//       This is due to the threshold criteria of the PID contorller. Because PID
-//       control is only used under a small threshold value, Kp and Kd terms must
-//       be increased in order for them to have the desired impact on the motor.
-float Kpt1 = 150;
-float Kpt2 = 300;
-float Kpt3 = 250;
-float Kdt1 = 2.1;
-float Kdt2 = 8;
-float Kdt3 = 4;
-
-// Ki constants for the integral term in PID control
-float Ki1 = 175;
-float Ki2 = 1000;
-float Ki3 = 2000;
-
-/** PID Controller Variables */
-// curr and new integral terms for PID controller
-float Ik1 = 0;
-float Ik2 = 0;
-float Ik3 = 0;
-float Ik1_old = 0;
-float Ik2_old = 0;
-float Ik3_old = 0;
-
-// curr and old error terms for PID controller
-float error1 = 0;
-float error2 = 0;
-float error3 = 0;
-float error_old1 = 0;
-float error_old2 = 0;
-float error_old3 = 0;
-
 /** Infinite Impulse Response (IIR) variables */
-float theta_desired = 0.0;
-
+// for motor 1
 float Theta1_old = 0;
 float Omega1_old1 = 0;
 float Omega1_old2 = 0;
 float Omega1 = 0;
 
+// for motor 2
 float Theta2_old = 0;
 float Omega2_old1 = 0;
 float Omega2_old2 = 0;
 float Omega2 = 0;
 
+// for motor 3
 float Theta3_old = 0;
 float Omega3_old1 = 0;
 float Omega3_old2 = 0;
 float Omega3 = 0;
 
-/** Feed Forward variables */
-float t = 0.0;
-float J1 = 0.0167;
-float J2 = 0.03;
-float J3 = 0.0128;
-float theta_desired_dot = 0.0;
-float theta_desired_ddot = 0.0;
-
-/** Friction constants and parameters */
+/** Friction Constants and Parameters */
+// Viscous and Coulomb Terms (Positive)
 float Viscous_positive1 = 0.195;
 float Viscous_positive2 = 0.2500;
 float Viscous_positive3 = 0.1922;
@@ -146,6 +88,7 @@ float Coulomb_positive1 = 0.3405;
 float Coulomb_positive2 = 0.1675;
 float Coulomb_positive3 = 0.17039;
 
+// Viscous and Coulomb Terms (Negative)
 float Viscous_negative1 = 0.195;
 float Viscous_negative2 = 0.2870;
 float Viscous_negative3 = 0.2132;
@@ -153,41 +96,51 @@ float Coulomb_negative1 = -0.3405;
 float Coulomb_negative2 = -0.16565;
 float Coulomb_negative3 = -0.16934;
 
+// Slope value for Omega vs u proportional control effort
 float slope = 3.6;
 
+// min velocity values for the joints
 float min_velocity1 = 0.1;
 float min_velocity2 = 0.05;
 float min_velocity3 = 0.05;
 
+// Friction Compensation variables
 float u_fric1 = 0.0;
 float u_fric2 = 0.0;
 float u_fric3 = 0.0;
 
+// Friction Multiplication Factors used in Feed Forward Control
 float fric_fac1 = 0.45;
 float fric_fac2 = 1.0;
 float fric_fac3 = 1.7;
 
-/** Task Space Controls */
+/** Task Space PD Control */
+// KP gains for x, y, and z
 float KPx = 280.0;
 float KPy = 150.0;
 float KPz = 220.0;
 
+// KD gains for x, y, and z
 float KDx = 19.0;
 float KDy = 12.0;
 float KDz = 12.0;
 
+// x, y and z desired values in meters
 float xde = 0.35;
 float yde = 0.0;
 float zde = 0.40;
 
+// x, y and z DOT desired values
 float xdd = 0.0;
 float ydd = 0.0;
 float zdd = 0.0;
 
+// x, y and z DOT current values
 float xd = 0.0;
 float yd = 0.0;
 float zd = 0.0;
 
+// used to calculate x, y, and z DOT current values through IIR
 float x_old = 0.0;
 float xd_old1 = 0.0;
 float xd_old2 = 0.0;
@@ -198,12 +151,7 @@ float z_old = 0.0;
 float zd_old1 = 0.0;
 float zd_old2 = 0.0;
 
-float cosq1 = 0;
-float sinq1 = 0;
-float cosq2 = 0;
-float sinq2 = 0;
-float cosq3 = 0;
-float sinq3 = 0;
+// These JT variables together represent the Jacobian Transpose Matrix [3x3]
 float JT_11 = 0;
 float JT_12 = 0;
 float JT_13 = 0;
@@ -213,15 +161,16 @@ float JT_23 = 0;
 float JT_31 = 0;
 float JT_32 = 0;
 float JT_33 = 0;
-float cosz = 0;
-float sinz = 0;
-float cosx = 0;
-float sinx = 0;
-float cosy = 0;
-float siny = 0;
-float thetaz = 0;
-float thetax = 0;
-float thetay = 0;
+
+// Help compute Jacobian Transpose
+float cosq1 = 0;
+float sinq1 = 0;
+float cosq2 = 0;
+float sinq2 = 0;
+float cosq3 = 0;
+float sinq3 = 0;
+
+// Rotation variables
 float R11 = 0;
 float R12 = 0;
 float R13 = 0;
@@ -231,6 +180,8 @@ float R23 = 0;
 float R31 = 0;
 float R32 = 0;
 float R33 = 0;
+
+// Transpose Rotation variables
 float RT11 = 0;
 float RT12 = 0;
 float RT13 = 0;
@@ -241,17 +192,35 @@ float RT31 = 0;
 float RT32 = 0;
 float RT33 = 0;
 
-/** Feed Forward Force Term */
+// Help compute Rotation Matrix
+float cosz = 0;
+float sinz = 0;
+float cosx = 0;
+float sinx = 0;
+float cosy = 0;
+float siny = 0;
+
+// Rotation thetas about x, y, and z
+float thetaz = 0;
+float thetax = 0;
+float thetay = 0;
+
+/** Feed Forward Force Terms */
+// Variables to offset gravity and external forces.
 float Zcmd_offset = 10;
 float Zcmd_force = 0;
 float Zcmd = 0;
+
+// Robot Torque Constant Kt
 float Kt = 6.0;
 
 /** Impedance Control (Axis Rotation) */
+// Theta values to rotate axis by
 float tx = 0.0;
 float ty = 0.0;
 float tz = 0.0;
 
+// cos and sin varialbes for calculations
 float ctx = 0.0;
 float cty = 0.0;
 float ctz = 0.0;
@@ -259,17 +228,23 @@ float stx = 0.0;
 float sty = 0.0;
 float stz = 0.0;
 
+// x, y, and z error variables
 float x_error = 0.0;
 float y_error = 0.0;
 float z_error = 0.0;
+
+// x_dot, y_dot, and z_dot error variables
 float xd_error = 0.0;
 float yd_error = 0.0;
 float zd_error = 0.0;
 
-/** Straight Line trajectory */
+/** Straight Line Trajectory Variables */
+// Desired change in x, y, z positions [meters]
 float delta_x = 0.0;
 float delta_y = 0.0;
 float delta_z = 0.1;
+
+// Desired  locations for a and b positions [meters]
 float xa = 0.35;
 float ya = 0.0;
 float za = 0.3;
@@ -277,6 +252,7 @@ float xb = 0.35;
 float yb = 0.0;
 float zb = 0.4;
 
+// Total time desired for each trajectory cycle
 int t_total = 2;
 
 /** ********** Function Declaration ********** **/
@@ -296,19 +272,33 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     /** necessary initialization */
     initialization(theta1motor, theta2motor);
 
-    // Desired step xyz generation
-//        if ((mycount%4000) < 2000) {
-//            xde = 0.40;
-//            yde = 0.0;
-//            zde = 0.35;
-//
-//        } else {
-//            xde = 0.30;
-//            yde = 0.15;
-//            zde = 0.45;
-//        }
+    /** Creating desired waves 
+         * 
+         * This section deals with generating trajectories or desired waveforms that the CRS
+         * Robot Arm will follow during its operation. 
+         * 
+         * Toggle commenting statements in order to choose the trajectory to follow! 
+         * By uncommenting or commenting specific lines of code, you can select different
+         * trajectory profiles such as step,or straight line.
+         *  
+         * Note: Only one trajectory should be uncommented at all times to ensure that the
+         * robot arm follows the intended path. Mixing multiple trajectories or waveforms
+         * can lead to unpredictable or undesired motion.
+        */
 
-    /** Desired line wave generation */
+    /* Desired step xyz generation */
+    //    if ((mycount%4000) < 2000) {
+    //        xde = 0.40;
+    //        yde = 0.0;
+    //        zde = 0.35;
+
+    //    } else {
+    //        xde = 0.30;
+    //        yde = 0.15;
+    //        zde = 0.45;
+    //    }
+
+    /* Desired line wave generation */
     if ((mycount%(2000*t_total)) < 1000.0*t_total) {
                 xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
                 yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
@@ -321,14 +311,16 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Infinite Impulse Response
      *
-     * This section implements the Infinite Impulse Response (IIR) filtering technique
-     * to calculate raw angular velocity (Omega) optimally.
+     * The first section implements the Infinite Impulse Response (IIR) filtering technique
+     * to calculate raw angular velocity (Omega) optimally. The second section implements the IIR 
+     * filter for the x, y, and z coordinate system velocities.
      *
      * Omega, representing angular velocity, is first found by using a simple difference
      * in thetas equation for a basic estimation. Afterwards, an Infinite Impulse Response (IIR)
-     * averaging filter is used to filer and smoothen the omega calculation.
+     * averaging filter is used to filer and smoothen the omega calculation. On the second section, 
+     * similar calculations are done for the different coordinate system.
      *
-     * This ensures that the Omega values used for later control calculations are more
+     * This ensures that the values used for later control calculations are more
      * stable with smoother fluxuations which allows for more stable and precise control
      * of the CRS Robot Arm.
      */
@@ -343,50 +335,20 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega2 = (Omega2 + Omega2_old1 + Omega2_old2)/3.0;
     Omega3 = (Omega3 + Omega3_old1 + Omega3_old2)/3.0;
 
-    /** PD & PID control
+    // First simple x_dot calculations using theta differences.
+    xd = (x - x_old)/0.001;
+    yd = (y - y_old)/0.001;
+    zd = (z - z_old)/0.001;
+
+    // implementing averaging filter for velocities
+    xd = (xd + xd_old1 + xd_old2)/3.0;
+    yd = (yd + yd_old1 + yd_old2)/3.0;
+    zd = (zd + zd_old1 + zd_old2)/3.0;
+
+    /** Rotation, Feed Forward, and Impedance Control Calculations
      *
-     * Here we implement both PD and PID control for regulating the CRS Robot Arm's movements.
-     *  If the difference between our desired theta and actual motor theta is greater than a
-     * certain threshold, we use PD control. Otherwise we use PID control. Essentially, PD control
-     * is used the majority of the time but as the CRS robot arm gets closer to the desired theta
-     * and error becomes smaller, we use PID control.
-     *
-     * PD Control:
-     * PD control calculates the contorl torque based on proportional and derivative terms, and
-     * it's used to reduce the error quickly while damping oscillations. PD control begins by first
-     * resetting the integral term constants from PID control to 0. Afterwards, the torque values
-     * are calculated and set.
-     *
-     * PID Control:
-     * PID control further builds upon PD control by adding an integral term to the calculation
-     * which integrates error over time. This helps reduce steady-state error and improves the
-     * overall accuracy of our mapping.
-     *
-     * Additionally the torque values are set differently when using feed forward control. Because
-     * we are only using feed forwards if using our cubic trajectory, we have added a cubic_wave flag
-     * to do so. In this case, feedforward constants J1, J2, and J3 are used and additional terms are
-     * added to enhance control performance.
      *
     */
-
-    // IIR
-    xd = (x - x_old)/0.001;
-    xd = (xd + xd_old1 + xd_old2)/3.0;
-    x_old = x;
-    xd_old2 = xd_old1;
-    xd_old1 = xd;
-
-    yd = (y - y_old)/0.001;
-    yd = (yd + yd_old1 + yd_old2)/3.0;
-    y_old = y;
-    yd_old2 = yd_old1;
-    yd_old1 = yd;
-
-    zd = (z - z_old)/0.001;
-    zd = (zd + zd_old1 + zd_old2)/3.0;
-    z_old = z;
-    zd_old2 = zd_old1;
-    zd_old1 = zd;
 
     // Rotation zxy and its Transpose
     cosz = cos(thetaz);
@@ -405,13 +367,15 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     RT23 = R32 = sinx;
     RT33 = R33 = cosx*cosy;
 
-    // for impedance control
+    // calculations for impedance control
     ctx = cos(tx);
     cty = cos(ty);
     ctz = cos(tz);
     stx = sin(tx);
     sty = sin(ty);
     stz = sin(tz);
+
+    // calculating position and velocity errors
     x_error = xde-x;
     y_error = yde-y;
     z_error = zde-z;
@@ -420,73 +384,107 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     yd_error = ydd-yd;
     zd_error = zdd-zd;
 
-     // Jacobian Transpose
-     cosq1 = cos(theta1motor);
-     sinq1 = sin(theta1motor);
-     cosq2 = cos(theta2motor);
-     sinq2 = sin(theta2motor);
-     cosq3 = cos(theta3motor);
-     sinq3 = sin(theta3motor);
-     JT_11 = -0.254*sinq1*(cosq3 + sinq2);
-     JT_12 = 0.254*cosq1*(cosq3 + sinq2);
-     JT_13 = 0;
-     JT_21 = 0.254*cosq1*(cosq2 - sinq3);
-     JT_22 = 0.254*sinq1*(cosq2 - sinq3);
-     JT_23 = -0.254*(cosq3 + sinq2);
-     JT_31 = -0.254*cosq1*sinq3;
-     JT_32 = -0.254*sinq1*sinq3;
-     JT_33 = -0.254*cosq3;
-
-     // Joint 1 calculating friction
-     if (Omega1 > min_velocity1) {
-         u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
-     } else if (Omega1 < -min_velocity1) {
-         u_fric1 = Viscous_negative1*Omega1 + Coulomb_negative1;
-     } else {
-         u_fric1 = slope*Omega1;
-     }
-
-     // Joint 2
-     if (Omega2 > min_velocity2) {
-         u_fric2 = Viscous_positive2*Omega2 + Coulomb_positive2;
-     } else if (Omega2 < -min_velocity2) {
-         u_fric2 = Viscous_negative2*Omega2 + Coulomb_negative2;
-     } else {
-         u_fric2 = slope*Omega2;
-     }
-
-     // Joint 3
-     if (Omega3 > min_velocity3) {
-         u_fric3 = Viscous_positive3*Omega3 + Coulomb_positive3;
-     } else if (Omega3 < -min_velocity3) {
-         u_fric3 = Viscous_negative3*Omega3 + Coulomb_negative3;
-     } else {
-         u_fric3 = slope*Omega3;
-     }
-
-     // multiplying by friction factors to not overestimate friction
-     u_fric1 = u_fric1*fric_fac1;
-     u_fric2 = u_fric2*fric_fac2;
-     u_fric3 = u_fric3*fric_fac3;
+    // Jacobian Transpose calculations
+    cosq1 = cos(theta1motor);
+    sinq1 = sin(theta1motor);
+    cosq2 = cos(theta2motor);
+    sinq2 = sin(theta2motor);
+    cosq3 = cos(theta3motor);
+    sinq3 = sin(theta3motor);
+    JT_11 = -0.254*sinq1*(cosq3 + sinq2);
+    JT_12 = 0.254*cosq1*(cosq3 + sinq2);
+    JT_13 = 0;
+    JT_21 = 0.254*cosq1*(cosq2 - sinq3);
+    JT_22 = 0.254*sinq1*(cosq2 - sinq3);
+    JT_23 = -0.254*(cosq3 + sinq2);
+    JT_31 = -0.254*cosq1*sinq3;
+    JT_32 = -0.254*sinq1*sinq3;
+    JT_33 = -0.254*cosq3;
 
 
-     Zcmd = Zcmd_offset + Zcmd_force;
-    /* Motor 1 */
-             *tau1 = u_fric1;
-//     *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
-//     *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
+    /** Friction
+     *
+     *
+    */
+
+    // Joint 1 calculating friction
+    if (Omega1 > min_velocity1) {
+        u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
+    } else if (Omega1 < -min_velocity1) {
+        u_fric1 = Viscous_negative1*Omega1 + Coulomb_negative1;
+    } else {
+        u_fric1 = slope*Omega1;
+    }
+
+    // Joint 2
+    if (Omega2 > min_velocity2) {
+        u_fric2 = Viscous_positive2*Omega2 + Coulomb_positive2;
+    } else if (Omega2 < -min_velocity2) {
+        u_fric2 = Viscous_negative2*Omega2 + Coulomb_negative2;
+    } else {
+        u_fric2 = slope*Omega2;
+    }
+
+    // Joint 3
+    if (Omega3 > min_velocity3) {
+        u_fric3 = Viscous_positive3*Omega3 + Coulomb_positive3;
+    } else if (Omega3 < -min_velocity3) {
+        u_fric3 = Viscous_negative3*Omega3 + Coulomb_negative3;
+    } else {
+        u_fric3 = slope*Omega3;
+    }
+
+    // multiplying by friction factors to not overestimate friction
+    u_fric1 = u_fric1*fric_fac1;
+    u_fric2 = u_fric2*fric_fac2;
+    u_fric3 = u_fric3*fric_fac3;
 
 
-    /* Motor 2 */
-             *tau2 = u_fric2;
-//            *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
-//    *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
+    // Zcmd is used to offset gravity and apply/cancel an external force if required
+    Zcmd = Zcmd_offset + Zcmd_force;
+
+    /** Motor Control
+     *
+     *
+     * local variables:
+     *        - fric_test          : Boolean for desired friction cancellation test
+     *        - TS_Feed_Forwards   : Boolean for desired Feed Forwards test
+     *        - impedance_control  : Boolean for desired Impedance Control test
+    */
+
+    bool fric_test = false;
+    bool TS_Feed_Forwards = false;
+    bool impedance_control = false;
+
+    if (fric_test) {
+        *tau1 = u_fric1;
+        *tau2 = u_fric2;
+        *tau3 = u_fric3;
+    } else if (TS_Feed_Forwards) {
+        *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
+        *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
+        *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
+    } else if (impedance_control) {
+        *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
+        *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
+        *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
+    }
+    // /* Motor 1 */
+    // *tau1 = u_fric1;
+    // // *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
+    // // *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
 
 
-    /* Motor 3 */
-                    *tau3 = u_fric3;
-//       *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
-//    *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
+    // /* Motor 2 */
+    // *tau2 = u_fric2;
+    // // *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
+    // // *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
+
+
+    // /* Motor 3 */
+    // *tau3 = u_fric3;
+    // // *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
+    // // *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
 
     /** Saturate the Torque Values
      *
@@ -496,41 +494,27 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
      * of the robot.
      *
      * This snippit caps the torque value at +/- 5.
-     *
-     * Furthermore, because we cap the torque, it is important to
-     * stop integrating if using PID control. Resultingly, if
-     * PID control is being used, we reset the Ik integral terms
-     * to their previous values.
-     *
-     * Note: even if PID controller is not in use, resetting Ik1 values
-     *       will have no adverse effect on the system.
      */
 
     /* Motor 1 */
     if (*tau1 > 5.0){
         *tau1 = 5.0;
-        Ik1 = Ik1_old;
     } else if ( *tau1 < -5.0 ){
         *tau1 = -5.0;
-        Ik1 = Ik1_old;
     }
 
     /* Motor 2 */
     if (*tau2 > 5.0){
         *tau2 = 5.0;
-        Ik2 = Ik2_old;
     } else if ( *tau2 < -5.0 ){
         *tau2 = -5.0;
-        Ik2 = Ik2_old;
     }
 
     /* Motor 3 */
     if (*tau3 > 5.0){
         *tau3 = 5.0;
-        Ik3 = Ik3_old;
     } else if ( *tau3 < -5.0 ){
         *tau3 = -5.0;
-        Ik3 = Ik3_old;
     }
 
     /** Output Variables
@@ -549,7 +533,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
      *              - Can be changed depending on needs.
      *        - Simulink_PlotVar1, Simulink_PlotVar2, Simulink_PlotVar3, Simulink_PlotVar4
      *              - Variables to send to Simulink for analysis.
-     */
+    */
     printtheta1motor = theta1motor;
     printtheta2motor = theta2motor;
     printtheta3motor = theta3motor;
@@ -557,15 +541,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Simulink_PlotVar1 = theta1motor;
     Simulink_PlotVar2 = theta2motor;
     Simulink_PlotVar3 = theta3motor;
-    Simulink_PlotVar4 = theta_desired;
-
-    /* Uncomment this below snippit to plot the difference between
-       desired thetas and actual motor thetas instead */
-
-    // Simulink_PlotVar1 = theta_desired-theta1motor;
-    // Simulink_PlotVar2 = theta_desired-theta2motor;
-    // Simulink_PlotVar3 = theta_desired-theta3motor;
-    // Simulink_PlotVar4 = theta_desired-theta_desired;
+    Simulink_PlotVar4 = tau1;
 
     /** Forward Kinematics (simulation)
      *
@@ -627,10 +603,20 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_old2 = Omega3_old1;
     Omega3_old1 = Omega3;
 
-    // for PID control
-    Ik1_old = Ik1;
-    Ik2_old = Ik2;
-    Ik3_old = Ik3;
+    // for x_dot
+    x_old = x;
+    xd_old2 = xd_old1;
+    xd_old1 = xd;
+
+    // for y_dot
+    y_old = y;
+    yd_old2 = yd_old1;
+    yd_old1 = yd;
+
+    // for z_dot
+    z_old = z;
+    zd_old2 = zd_old1;
+    zd_old1 = zd;
 
     // for overall loop
     mycount++;
