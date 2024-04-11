@@ -299,6 +299,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        }
 
     /* Desired line wave generation */
+    // Period of the line is (2 * t_total): t_total seconds from xb to xa, t_total seconds back
     if ((mycount%(2000*t_total)) < 1000.0*t_total) {
         xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
         yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
@@ -407,6 +408,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     */
 
     // Joint 1 calculating friction
+    // case 1: |omega| < min_velocity: static friction, approximated by a line with high slope
+    // case 2 and 3: |omega| >= min_velocity: sliding friction, approximated by a line with low slope
+    // The switching point between different cases are continuous to ensure smooth torque
     if (Omega1 > min_velocity1) {
         u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
     } else if (Omega1 < -min_velocity1) {
@@ -434,6 +438,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     }
 
     // multiplying by friction factors to not overestimate friction
+    // underestimation is preferred, as in the case of overestimation the robot is unstable
     u_fric1 = u_fric1*fric_fac1;
     u_fric2 = u_fric2*fric_fac2;
     u_fric3 = u_fric3*fric_fac3;
@@ -458,14 +463,19 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     bool impedance_control = true;
 
     if (fric_test) {
+        // Only add friction compensation
+        // Arm is expected to move by hand easily
         *tau1 = u_fric1;
         *tau2 = u_fric2;
         *tau3 = u_fric3;
     } else if (TS_Feed_Forwards) {
+        // The control law is u = JT * (Kp * error + Kd * error_dot) + fric_compensation
+        // Arm is expected to follow a trajectory specified by (xde, yde, zde), (xdd, ydd, zdd)
         *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
         *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
         *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
     } else if (impedance_control) {
+        // The control law aims to make the end-effector act like a mass spring damper system
         *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
         *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
         *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
