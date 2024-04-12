@@ -286,7 +286,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
          * can lead to unpredictable or undesired motion.
         */
 
-    /* Desired step xyz generation */
+    /* Desired step xyz (task space) generation */
 //        if ((mycount%4000) < 2000) {
 //            xde = 0.40;
 //            yde = 0.0;
@@ -348,7 +348,18 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Rotation, Feed Forward, and Impedance Control Calculations
      *
+     * Feed Forward forces are applied to have the arm behave in certain manners. This was
+     * first done in the Z direction where the Kp and Kd gains in the z direction were set
+     * to zero, which resulted in the arm being easily moved in the z direction, but not in
+     * the x or y directions.
      *
+     * Impedance control can be used to alter the stiffness and PD response of the arm
+     * along certain axes. For example, by reducing the Kd and Kp gains along the x-axis,
+     * you can weaken or completely remove resistance in that direction.
+     *
+     * We want to be able to control impedance along any axis however, so we can apply a
+     * set of three rotations about the world x, y, and z axis. These rotations can be done
+     * by different amounts to change the weakened axis to any desired axis.
     */
 
     // Rotation zxy and its Transpose
@@ -404,6 +415,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Friction
      *
+     * Compensating for friction means that the arm moves in a more smooth, free fashion, and is thus
+     * useful when programming the robot to perform motions. The friction compensation was done using
+     * the friction plots provided in the lab manual for the CRS robot arm after testing. With friction
+     * compensation, the robot arm moves easily, but it does not accelerate or bounce around when pushed.
      *
     */
 

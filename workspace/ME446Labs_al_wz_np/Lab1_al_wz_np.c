@@ -7,6 +7,7 @@
 #define GRAV        9.81
 
 // These two offsets are only used in the main file user_CRSRobot.c  You just need to create them here and find the correct offset and then these offset will adjust the encoder readings
+// If calibrated correctly, the offsets will ensure that the motor thetas read as zero when the robot is in the zero position
 float offset_Enc2_rad = -0.42; // -0.37;
 float offset_Enc3_rad = 0.23; // 0.27;
 
@@ -74,7 +75,8 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
-
+    // Change the value of the taus to drive the motors and move the arm
+    // Positive torques correspond to the positive joint axes
     *tau1 = 0;
     *tau2 = 0;
     *tau3 = 0;
@@ -117,19 +119,23 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     //                     {-sin(theta3motor), -cost(theta3motor), 0 , 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254},
     //                     {0,0,0,1}};
 
-    // Forward Kinematics
+    // Forward Kinematics, we only need the final positional equations from the HTM H03, as they give the final location of the EE
     x = 0.254*cos(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     y = 0.254*sin(theta1motor)*(cos(theta3motor)+sin(theta2motor));
     z = 0.254*cos(theta2motor)-0.254*sin(theta3motor)+0.254;
 
+    // Conversion from motor thetas to DH thetas based on the solved system of equations
+    // Note that, for theta 1, the motor theta and the DH theta are the same
     Th2DH = theta2motor - PI/2;
     Th3DH = -theta2motor + theta3motor + PI/2;
 
-    // Inverse Kinematics
+    // Inverse Kinematics, solutions came from the geometry of the CRS robot arm
+    // See lab report for more detail on how these were solved for
     IKTh1 = atan2(y,x);
     IKTh2 = atan2((0.254-z),sqrt(pow(x,2) + pow(y,2)))-acos( (pow(y,2)+pow(x,2)+pow((0.254-z),2)) / (2*(sqrt(pow(x,2)+pow(y,2)+pow((0.254-z),2))*(0.254))));
     IKTh3 = PI - acos( (-(pow((0.254-z),2)+pow(x,2)+pow(y,2)) + pow((0.254),2) + pow((0.254),2)) / (2*.254*.254) );
 
+    // Conversion from DH thetas derived from IK to the motor thetas
     IKtheta1motor = IKTh1;
     IKtheta2motor = IKTh2 + PI/2;
     IKtheta3motor = IKTh3 + IKtheta2motor - PI/2;
