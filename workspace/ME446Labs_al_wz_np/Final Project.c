@@ -8,6 +8,16 @@
 #define GRAV        9.81
 
 
+typedef struct {
+    float xDes;
+    float yDes;
+    float zDes;
+    float time;
+    float theta_z;
+    float force;
+} Waypoint;
+
+
 /** ********** Encoder Offsets ********** **/
 // These two offsets are only used in the main file user_CRSRobot.c
 // You just need to create them here and find the correct offset and then these offset will adjust the encoder readings.
@@ -126,9 +136,9 @@ float KDy = 12.0;
 float KDz = 12.0;
 
 // x, y and z desired values in meters
-float xde = 0.35;
+float xde = 0.0;
 float yde = 0.0;
-float zde = 0.40;
+float zde = 0.0;
 
 // x, y and z DOT desired values
 float xdd = 0.0;
@@ -255,16 +265,25 @@ float zb = 0.4;
 // Total time desired for each trajectory cycle
 int t_total = 2;
 
+Waypoint wp1 = {0.14, 0.0, 0.43, 0.0, 0.0, 0.0};
+Waypoint wp2 = {0.17, 0.19, 0.56, 2.0, 0.0, 0.0};
+Waypoint wp3 = {0.04, 0.35, 0.56, 4.0, 0.0, 0.0};
+Waypoint wp4 = {0.04, 0.35, 0.12, 6.0, 0.0, 0.0};
+
 /** ********** Function Declaration ********** **/
 void initialization(float t1m,float t2m);
 
 void mains_code(void);
+
+void StraightLine(Waypoint init, Waypoint final);
+void Hold(Waypoint hold_point);
 
 /** ********** Main ********** **/
 void main(void)
 {
     mains_code();
 }
+
 
 
 // This function is called every 1 ms
@@ -286,7 +305,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
          * can lead to unpredictable or undesired motion.
         */
 
-    /* Desired step xyz generation */
+    /* Desired step xyz (task space) generation */
 //        if ((mycount%4000) < 2000) {
 //            xde = 0.40;
 //            yde = 0.0;
@@ -299,14 +318,27 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 //        }
 
     /* Desired line wave generation */
-    if ((mycount%(2000*t_total)) < 1000.0*t_total) {
-        xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
-        yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
-        zde = (-delta_z*(mycount%(2000*t_total)))/(t_total*1000.0) + zb;
+    // Period of the line is (2 * t_total): t_total seconds from xb to xa, t_total seconds back
+//    if ((mycount%(2000*t_total)) < 1000.0*t_total) {
+//        xde = (-delta_x*(mycount%(2000*t_total)))/(t_total*1000.0) + xb;
+//        yde = (-delta_y*(mycount%(2000*t_total)))/(t_total*1000.0) + yb;
+//        zde = (-delta_z*(mycount%(2000*t_total)))/(t_total*1000.0) + zb;
+//    } else {
+//        xde = (delta_x*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + xa;
+//        yde = (delta_y*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + ya;
+//        zde = (delta_z*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + za;
+//    }
+
+    /** Final Project Trajectories */
+
+    if ((mycount/1000.0 < 2)) {
+        StraightLine(wp1, wp2);
+    } else if ((mycount/1000.0 < 4)){
+        StraightLine(wp2, wp3);
+    } else if ((mycount/1000.0 < 6)) {
+        StraightLine(wp3, wp4);
     } else {
-        xde = (delta_x*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + xa;
-        yde = (delta_y*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + ya;
-        zde = (delta_z*(mycount%(2000*t_total - 1000*t_total)))/(t_total*1000.0) + za;
+        Hold(wp4);
     }
 
     /** Infinite Impulse Response
@@ -347,7 +379,18 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Rotation, Feed Forward, and Impedance Control Calculations
      *
+     * Feed Forward forces are applied to have the arm behave in certain manners. This was
+     * first done in the Z direction where the Kp and Kd gains in the z direction were set
+     * to zero, which resulted in the arm being easily moved in the z direction, but not in
+     * the x or y directions.
      *
+     * Impedance control can be used to alter the stiffness and PD response of the arm
+     * along certain axes. For example, by reducing the Kd and Kp gains along the x-axis,
+     * you can weaken or completely remove resistance in that direction.
+     *
+     * We want to be able to control impedance along any axis however, so we can apply a
+     * set of three rotations about the world x, y, and z axis. These rotations can be done
+     * by different amounts to change the weakened axis to any desired axis.
     */
 
     // Rotation zxy and its Transpose
@@ -403,10 +446,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Friction
      *
+     * Compensating for friction means that the arm moves in a more smooth, free fashion, and is thus
+     * useful when programming the robot to perform motions. The friction compensation was done using
+     * the friction plots provided in the lab manual for the CRS robot arm after testing. With friction
+     * compensation, the robot arm moves easily, but it does not accelerate or bounce around when pushed.
      *
     */
 
     // Joint 1 calculating friction
+    // case 1: |omega| < min_velocity: static friction, approximated by a line with high slope
+    // case 2 and 3: |omega| >= min_velocity: sliding friction, approximated by a line with low slope
+    // The switching point between different cases are continuous to ensure smooth torque
     if (Omega1 > min_velocity1) {
         u_fric1 = Viscous_positive1*Omega1 + Coulomb_positive1;
     } else if (Omega1 < -min_velocity1) {
@@ -434,6 +484,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     }
 
     // multiplying by friction factors to not overestimate friction
+    // underestimation is preferred, as in the case of overestimation the robot is unstable
     u_fric1 = u_fric1*fric_fac1;
     u_fric2 = u_fric2*fric_fac2;
     u_fric3 = u_fric3*fric_fac3;
@@ -458,14 +509,19 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     bool impedance_control = true;
 
     if (fric_test) {
+        // Only add friction compensation
+        // Arm is expected to move by hand easily
         *tau1 = u_fric1;
         *tau2 = u_fric2;
         *tau3 = u_fric3;
     } else if (TS_Feed_Forwards) {
+        // The control law is u = JT * (Kp * error + Kd * error_dot) + fric_compensation
+        // Arm is expected to follow a trajectory specified by (xde, yde, zde), (xdd, ydd, zdd)
         *tau1 = -JT_11*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_12*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_13*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric1 + JT_13*Zcmd/Kt;
         *tau2 =  -JT_21*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_22*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_23*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric2 + JT_23*Zcmd/Kt;
         *tau3 = -JT_31*(KPx*(x - xde) + KDx*(xd - xdd)) - JT_32*(KPy*(y - yde) + KDy*(yd - ydd)) - JT_33*(KPz*(z - zde) + KDz*(zd - zdd)) + u_fric3 + JT_33*Zcmd/Kt;
     } else if (impedance_control) {
+        // The control law aims to make the end-effector act like a mass spring damper system
         *tau1 = (JT_11*(ctz*sty + cty*stx*stz) + JT_12*(sty*stz - cty*ctz*stx) + JT_13*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_11*(cty*ctz - stx*sty*stz) + JT_12*(cty*stz + ctz*stx*sty) - JT_13*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_13*stx + JT_12*ctx*ctz - JT_11*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric1;
         *tau2 = (JT_21*(ctz*sty + cty*stx*stz) + JT_22*(sty*stz - cty*ctz*stx) + JT_23*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_21*(cty*ctz - stx*sty*stz) + JT_22*(cty*stz + ctz*stx*sty) - JT_23*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_23*stx + JT_22*ctx*ctz - JT_21*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric2;
         *tau3 = (JT_31*(ctz*sty + cty*stx*stz) + JT_32*(sty*stz - cty*ctz*stx) + JT_33*ctx*cty)*(KDz*xd_error*(ctz*sty + cty*stx*stz) + KPz*x_error*(ctz*sty + cty*stx*stz) + KDz*yd_error*(sty*stz - cty*ctz*stx) + KPz*y_error*(sty*stz - cty*ctz*stx) + KDz*zd_error*ctx*cty + KPz*z_error*ctx*cty) + (JT_31*(cty*ctz - stx*sty*stz) + JT_32*(cty*stz + ctz*stx*sty) - JT_33*ctx*sty)*(KDx*xd_error*(cty*ctz - stx*sty*stz) + KPx*x_error*(cty*ctz - stx*sty*stz) + KDx*yd_error*(cty*stz + ctz*stx*sty) + KPx*y_error*(cty*stz + ctz*stx*sty) - KDx*zd_error*ctx*sty - KPx*z_error*ctx*sty) + (JT_33*stx + JT_32*ctx*ctz - JT_31*ctx*stz)*(KDy*zd_error*stx + KPy*z_error*stx + KDy*yd_error*ctx*ctz + KPy*y_error*ctx*ctz - KDy*xd_error*ctx*stz - KPy*x_error*ctx*stz) + u_fric3;
@@ -519,9 +575,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
      *        - Simulink_PlotVar1, Simulink_PlotVar2, Simulink_PlotVar3, Simulink_PlotVar4
      *              - Variables to send to Simulink for analysis.
     */
-    printtheta1motor = theta1motor;
-    printtheta2motor = theta2motor;
-    printtheta3motor = theta3motor;
+    printtheta1motor = x;
+    printtheta2motor = y;
+    printtheta3motor = z;
 
     Simulink_PlotVar1 = theta1motor;
     Simulink_PlotVar2 = theta2motor;
@@ -620,7 +676,7 @@ void printing(void){
     if (whattoprint == 0) {
         // serial_printf(&SerialA, "%.2f %.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI);
         // serial_printf(&SerialA, "Motor Thetas: %.2f %.2f %.2f \n\r", printtheta1motor*180/PI, printtheta2motor*180/PI, printtheta3motor*180/PI);
-        // serial_printf(&SerialA, "Position: %.2f %.2f %.2f  \n\r", x, y, z);
+         serial_printf(&SerialA, "Position: %.2f %.2f %.2f %.2f %.2f %.2f \n\r", x, y, z , xde, yde, zde);
         // serial_printf(&SerialA, "IK DH Thetas: %.2f %.2f %.2f   \n\r", IKTh1*180/PI, IKTh2*180/PI, IKTh3*180/PI);
         // serial_printf(&SerialA, "Motor Theta (IK)s: %.2f %.2f %.2f  \n\r", IKtheta1motor*180/PI, IKtheta2motor*180/PI, IKtheta3motor*180/PI );
         // serial_printf(&SerialA, "----------------\n\r");
@@ -658,4 +714,40 @@ void initialization(float t1m,float t2m) {
         GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Blink LED on Control Card
         GpioDataRegs.GPBTOGGLE.bit.GPIO60 = 1; // Blink LED on Emergency Stop Box
     }
+}
+
+void StraightLine(Waypoint init, Waypoint final) {
+
+    float max_velocity = 5; // m/s
+
+    float t_total_1 = fabs(final.time - init.time);
+    float delta_x = final.xDes - init.xDes;
+    float delta_y = final.yDes - init.yDes;
+    float delta_z = final.zDes - init.zDes;
+    float norm = pow(pow(delta_x, 2) + pow(delta_y,2) + pow(delta_z,2), 0.5);
+
+    xde = (delta_x)*(mycount/1000.0 - init.time)/t_total_1 + init.xDes;
+    yde = (delta_y)*(mycount/1000.0 - init.time)/t_total_1 + init.yDes;
+    zde = (delta_z)*(mycount/1000.0 - init.time)/t_total_1 + init.zDes;
+
+    xdd = (delta_x)/t_total_1;
+    ydd = (delta_y)/t_total_1;
+    zdd = (delta_z)/t_total_1;
+
+//    float max_velx = max_velocity*delta_x/norm;
+//    float max_vely = max_velocity*delta_y/norm;
+//    float max_velz = max_velocity*delta_z/norm;
+//
+//    xdd = -max_velx/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_velx;
+//    ydd = -max_vely/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_vely;
+//    zdd = -max_velz/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_velz;
+}
+
+void Hold(Waypoint hold_point) {
+    xde = hold_point.xDes;
+    yde = hold_point.yDes;
+    zde = hold_point.zDes;
+    xdd = 0;
+    ydd = 0;
+    zdd = 0;
 }
