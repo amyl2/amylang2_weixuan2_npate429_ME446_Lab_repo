@@ -94,9 +94,24 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
         Set_Imp_Gains(300,0,KPz,20,0,KDz, false); // Change Imp_Gains
         StraightLine(wp17,wp18); // transition first line
+    } else if (t_waypoint < wp19.time){
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
+        Set_Imp_Gains(800,600,KPz,20,15,KDz, false); // Change Imp_Gains
+        StraightLine(wp18,wp19); // transition first line
+    } else if (t_waypoint < wp20.time){
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
+        Set_Imp_Gains(800,600,800,20,20,20, false); // reset imp_gains
+        StraightLine(wp19,wp20); // transition first line
+    }  else if (t_waypoint < wp21.time){
+        StraightLine(wp20,wp21); // transition first line
+    } else if (t_waypoint < wp22.time){
+        StraightLine(wp21,wp22); // transition first line
+    } else if (t_waypoint < wp23.time){
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // Change Imp_Gains
+        StraightLine(wp22,wp23); // transition first line
     } else {
         Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // Change Imp_Gains
-        Hold(wp18);
+        Hold(wp23);
     }
 
     /** Code to make it work :) */
@@ -395,10 +410,6 @@ void Motor_Control(float *tau1,float *tau2,float *tau3) {
 
         // Zcmd is used to offset gravity and apply/cancel an external force if required
         Zcmd = Zcmd_offset + Zcmd_force;
-
-        bool fric_test = false;
-        bool TS_Feed_Forwards = false;
-        bool impedance_control = true;
 
         if (fric_test) {
             // Only add friction compensation

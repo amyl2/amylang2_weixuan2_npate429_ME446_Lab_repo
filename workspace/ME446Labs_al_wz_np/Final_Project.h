@@ -221,6 +221,11 @@ float Zcmd_offset = 10;
 float Zcmd_force = 0;
 float Zcmd = 0;
 
+// Booleans for specifying which control method
+bool fric_test = false;
+bool TS_Feed_Forwards = false;
+bool impedance_control = true;
+
 // Robot Torque Constant Kt
 float Kt = 6.0;
 
@@ -288,7 +293,14 @@ Waypoint wp17 = {0.330, 0.031, 0.205, 9.7, -(0)*PI/180.0, 0.0}; // transition li
 Waypoint wp18 = {0.398, -0.054, 0.205, 10.0, -(90.0-36.87)*PI/180.0, 0.0}; // line 3
 
 
+//* Force Step */
+Waypoint wp19 = {0.398, -0.054, 0.311, 10.5, 0.0, 0.0}; // rise above
+Waypoint wp20 = {0.236, 0.142, 0.311, 11.5, 0.0, 0.0}; // go to egg
+Waypoint wp21 = {0.236, 0.142, 0.278, 11.7, 0.0, 0.0}; // push egg
+Waypoint wp22 = {0.236, 0.142, 0.278, 13.7, 0.0, 0.0}; // hold egg
 
+//* Zero Step */
+Waypoint wp23 = {0.254, 0.0, 0.508, 14.3, 0.0, 0.0}; // go to egg
 
 
 /** ********** Function Declaration ********** **/
