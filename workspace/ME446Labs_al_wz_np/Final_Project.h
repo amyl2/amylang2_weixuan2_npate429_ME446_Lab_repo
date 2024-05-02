@@ -282,22 +282,22 @@ Waypoint wp7 = {0.0325, 0.345, 0.35, 6.0, 0.0, 0.0};// Rise above
 //* Maze Step */
 Waypoint wp8 = {0.255, 0.110, 0.35, 7.0, 0.0, 0.0}; // above maze
 Waypoint wp9 = {0.402, 0.110, 0.205, 8.0, 0.0, 0.0}; // at maze
-Waypoint wp10 = {0.426, 0.064, 0.205, 9.0, -(90.0-36.87)*PI/180.0, 0.0}; // first line
-Waypoint wp11 = {0.427, 0.053, 0.205, 9.1, 0, 0.0}; // transition first line
-Waypoint wp12 = {0.417, 0.042, 0.205, 9.2, -(45)*PI/180.0, 0.0}; // transition #2 first line
-Waypoint wp13 = {0.403, 0.042, 0.205, 9.3, (15)*PI/180.0, 0.0}; // transition #3
-Waypoint wp14 = {0.354, 0.054, 0.205, 9.4, -(15)*PI/180.0, 0.0}; // line #2
-Waypoint wp15 = {0.347, 0.052, 0.205, 9.5, -(15)*PI/180.0, 0.0}; // transition line 2 first
-Waypoint wp16 = {0.315, 0.045, 0.205, 9.6, -(45)*PI/180.0, 0.0}; // transition line 2 second // 0.330 x originally
-Waypoint wp17 = {0.330, 0.031, 0.205, 9.7, -(0)*PI/180.0, 0.0}; // transition line 2 third
-Waypoint wp18 = {0.398, -0.054, 0.205, 10.0, -(90.0-36.87)*PI/180.0, 0.0}; // line 3
+Waypoint wp10 = {0.426, 0.064, 0.205, 8.5, -(90.0-36.87)*PI/180.0, 0.0}; // first line
+Waypoint wp11 = {0.431, 0.053, 0.205, 8.6, 0, 0.0}; // transition first line
+Waypoint wp12 = {0.417, 0.042, 0.205, 8.7, -(45)*PI/180.0, 0.0}; // transition #2 first line
+Waypoint wp13 = {0.403, 0.042, 0.205, 8.8, (15)*PI/180.0, 0.0}; // transition #3
+Waypoint wp14 = {0.354, 0.054, 0.205, 9.1, -(15)*PI/180.0, 0.0}; // line #2
+Waypoint wp15 = {0.342, 0.057, 0.205, 9.2, -(15)*PI/180.0, 0.0}; // transition line 2 first
+Waypoint wp16 = {0.313, 0.043, 0.205, 9.3, -(45)*PI/180.0, 0.0}; // transition line 2 second // 0.330 x originally
+Waypoint wp17 = {0.330, 0.037, 0.205, 9.4, (45)*PI/180.0, 0.0}; // transition line 2 third
+Waypoint wp18 = {0.398, -0.054, 0.205, 9.8, -(90.0-36.87)*PI/180.0, 0.0}; // line 3
 
 
 //* Force Step */
 Waypoint wp19 = {0.398, -0.054, 0.311, 10.5, 0.0, 0.0}; // rise above
 Waypoint wp20 = {0.236, 0.142, 0.311, 11.5, 0.0, 0.0}; // go to egg
-Waypoint wp21 = {0.236, 0.142, 0.278, 11.7, 0.0, 0.0}; // push egg
-Waypoint wp22 = {0.236, 0.142, 0.278, 13.7, 0.0, 0.0}; // hold egg
+Waypoint wp21 = {0.236, 0.142, 0.277, 11.7, 0.0, 0.0}; // push egg
+Waypoint wp22 = {0.236, 0.142, 0.277, 13.7, 0.0, 0.0}; // hold egg
 
 //* Zero Step */
 Waypoint wp23 = {0.254, 0.0, 0.508, 14.3, 0.0, 0.0}; // go to egg
