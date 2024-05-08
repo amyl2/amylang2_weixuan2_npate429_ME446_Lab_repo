@@ -18,16 +18,13 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     /** Creating desired waves
          *
-         * This section deals with generating trajectories or desired waveforms that the CRS
+         * This section deals with generating trajectories that the CRS
          * Robot Arm will follow during its operation.
          *
-         * Toggle commenting statements in order to choose the trajectory to follow!
-         * By uncommenting or commenting specific lines of code, you can select different
-         * trajectory profiles such as step,or straight line.
+         * All trajectories are straight lines. Depending on current time, different
+         * segments of the straight line are used as the reference trajectory.
          *
-         * Note: Only one trajectory should be uncommented at all times to ensure that the
-         * robot arm follows the intended path. Mixing multiple trajectories or waveforms
-         * can lead to unpredictable or undesired motion.
+         * 
         */
 
     /** Final Project Trajectories */
@@ -39,7 +36,10 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     } else if ((t_waypoint < wp4.time)) {
         StraightLine(wp3, wp4); // "" but slightly lower
     } else if (t_waypoint < wp5.time){
-        Set_Imp_Gains(0,0,KPz,0,0,KDz, false); // Change Imp_Gains
+        // Turn off impendance control in both x and y directions
+        // This allows the end effector to move freely in those directions
+        // so that it can slide into the hole guided by the countersink
+        Set_Imp_Gains(0,0,KPz,0,0,KDz, false);
         StraightLine(wp4, wp5); // "" but EVEN lower
     } else if (t_waypoint < wp6.time){
         StraightLine(wp5,wp6); // Hold
@@ -51,66 +51,94 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     } else if (t_waypoint < wp9.time){
         StraightLine(wp8,wp9); // At maze
     } else if (t_waypoint < wp10.time){
+        // The impedance control in original y axis is turned off
+        // the original coordinate frame is rotated around original z axis by -53 degrees
+        // This allows end effector to move freely in directions perpendicular to the maze line
         tz = wp10.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, false); // Change Imp_Gains
-        StraightLine(wp9,wp10); // first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, false); // Turn off y gains
+        StraightLine(wp9,wp10);
     } else if (t_waypoint < wp11.time){
+        // first transition point after the first maze line
+        // move in the y direction and allow to move freely in x direction
+        // the end-effector is expected to stay near the outer maze wall
         tz = wp11.theta_z;
-        Set_Imp_Gains(0,KPy,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(0,600,KPz,0,40,KDz, false); // Change Imp_Gains
-        StraightLine(wp10,wp11); // transition first line
+        Set_Imp_Gains(0,KPy,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(0,600,KPz,0,40,KDz, false); 
+        StraightLine(wp10,wp11); 
     } else if (t_waypoint < wp12.time){
+        // second transition point after the first maze line
+        // move in top-left direction, sliding along the outer maze wall
         tz = wp12.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(0,600,KPz,0,40,KDz, false); // Change Imp_Gains
-        StraightLine(wp11,wp12); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(0,600,KPz,0,40,KDz, false);
+        StraightLine(wp11,wp12);
     } else if (t_waypoint < wp13.time){
+        // third transition point after the first maze line
+        // continue to move in top-left direction, but with a larger up (-x) component
         tz = wp13.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(600,0,KPz,40,0,KDz, false); // Change Imp_Gains
-        StraightLine(wp12,wp13); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); 
+        Set_Imp_Gains(600,0,KPz,40,0,KDz, false);
+        StraightLine(wp12,wp13);
     } else if (t_waypoint < wp14.time){
+        // Second maze line
+        // Turn off gains in y direction and rotate around original z by -15 deg
+        // allows movement perpendicular to the second maze line
         tz = wp14.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(600,0,KPz,40,0,KDz, false); // Change Imp_Gains
-        StraightLine(wp13,wp14); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(600,0,KPz,40,0,KDz, false);
+        StraightLine(wp13,wp14);
     } else if (t_waypoint < wp15.time){
+        // first transition point after the second maze line
+        // Move a little more in the direction of the second maze line
         tz = wp15.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(600,0,KPz,40,0,KDz, false); // Change Imp_Gains
-        StraightLine(wp14,wp15); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(600,0,KPz,40,0,KDz, false);
+        StraightLine(wp14,wp15);
     } else if (t_waypoint < wp16.time){
+        // second transition point after the second maze line
+        // move in top-left direction
         tz = wp16.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(0,800,KPz,0,60,KDz, false); // Change Imp_Gains
-        StraightLine(wp15,wp16); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(0,800,KPz,0,60,KDz, false);
+        StraightLine(wp15,wp16);
     } else if (t_waypoint < wp17.time){
+        // third transition point after the second maze line
+        // move in down-left direction
         tz = wp17.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(0,400,KPz,0,20,KDz, false); // Change Imp_Gains
-        StraightLine(wp16,wp17); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(0,400,KPz,0,20,KDz, false);
+        StraightLine(wp16,wp17);
     } else if (t_waypoint < wp18.time){
+        // last maze line
         tz = wp18.theta_z;
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(300,0,KPz,20,0,KDz, false); // Change Imp_Gains
-        StraightLine(wp17,wp18); // transition first line
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(300,0,KPz,20,0,KDz, false); 
+        StraightLine(wp17,wp18);
     } else if (t_waypoint < wp19.time){
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(800,600,KPz,20,15,KDz, false); // Change Imp_Gains
-        StraightLine(wp18,wp19); // transition first line
+        // rise above from the maze exit
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(800,600,KPz,20,15,KDz, false);
+        StraightLine(wp18,wp19);
     } else if (t_waypoint < wp20.time){
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset imp_gains
-        Set_Imp_Gains(800,600,800,20,20,20, false); // reset imp_gains
-        StraightLine(wp19,wp20); // transition first line
+        // move horizontally to above the egg position
+        // gains are high to ensure end effector height tracking is accurate
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true);
+        Set_Imp_Gains(800,600,800,20,20,20, false);
+        StraightLine(wp19,wp20);
     }  else if (t_waypoint < wp21.time){
-        StraightLine(wp20,wp21); // transition first line
+        // push down egg
+        StraightLine(wp20,wp21);
     } else if (t_waypoint < wp22.time){
-        StraightLine(wp21,wp22); // transition first line
+        // hold the push down position
+        // wp21 and wp22 have the same positions, but different arrival times
+        StraightLine(wp21,wp22);
     } else if (t_waypoint < wp23.time){
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // Change Imp_Gains
-        StraightLine(wp22,wp23); // transition first line
+        // go to zero position as defined by zero D-H angles
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // reset Imp_Gains
+        StraightLine(wp22,wp23); 
     } else {
-        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); // Change Imp_Gains
+        // hold at zero position
+        Set_Imp_Gains(KPx,0,KPz,KDx,0,KDz, true); 
         Hold(wp23);
     }
 
@@ -133,13 +161,28 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
 void StraightLine(Waypoint init, Waypoint final) {
 
-//    float max_velocity = 5; // m/s
+    /** 
+         *
+         * Calculates the desired x, y, z position (in m) and x, y, z velocity (in m/s) in the current instant
+         * such that the end effector moves from waypoing "init" to "final" in a straight line at a constant
+         * velocity, as defined by delta_x / t_total 
+         * 
+         * This function is expected to be called in every cycle to update the desired x, y, z position
+         * 
+         * Note: the current time (seconds) as calculated by mycount/1000.0 should be within [init.time, final.time]
+         * to generate the desired straight line.
+         * 
+         * Input:
+         * init: start waypoint
+         * final: end waypoint
+         * each waypoing contains: x, y, z position (m) of the waypoint; time (s) counting from the start of motion at which
+         * the waypoint is reached.
+        */
 
     float t_total_1 = fabs(final.time - init.time);
     float delta_x = final.xDes - init.xDes;
     float delta_y = final.yDes - init.yDes;
     float delta_z = final.zDes - init.zDes;
-    float norm = pow(pow(delta_x, 2) + pow(delta_y,2) + pow(delta_z,2), 0.5);
 
     xde = (delta_x)*(mycount/1000.0 - init.time)/t_total_1 + init.xDes;
     yde = (delta_y)*(mycount/1000.0 - init.time)/t_total_1 + init.yDes;
@@ -149,16 +192,17 @@ void StraightLine(Waypoint init, Waypoint final) {
     ydd = (delta_y)/t_total_1;
     zdd = (delta_z)/t_total_1;
 
-//    float max_velx = max_velocity*delta_x/norm;
-//    float max_vely = max_velocity*delta_y/norm;
-//    float max_velz = max_velocity*delta_z/norm;
-//
-//    xdd = -max_velx/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_velx;
-//    ydd = -max_vely/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_vely;
-//    zdd = -max_velz/(pow(t_total_1/2,2)) * pow((mycount/1000.0 - t_total_1/2),2) + max_velz;
 }
 
 void Hold(Waypoint hold_point) {
+
+    /** 
+         *
+         * Calculates the desired x, y, z position (in m) and x, y, z velocity (in m/s) in the current instant
+         * such that the end effector remains stationary at hold_point
+         * All velocities are set to 0, and position is set to that of the waypoint
+         * 
+        */  
     xde = hold_point.xDes;
     yde = hold_point.yDes;
     zde = hold_point.zDes;
@@ -168,6 +212,19 @@ void Hold(Waypoint hold_point) {
 }
 
 void Set_Imp_Gains(float KPx_new, float KPy_new, float KPz_new, float KDx_new, float KDy_new, float KDz_new, bool reset) {
+    /** 
+         *
+         * Set the proportional, derivative gains of PD controller in impedance control
+         * x, y, z refer to the world frame fixed at the base of the robot
+         * If reset is true, all gains are set to hard-coded default values, no matter what other inputs are
+         * If reset is false, the gains are set according to inputs
+         * 
+         * Input:
+         * KPx_new, KPy_new, KPz_new: new proportional gains in x, y, and z directions
+         * KDx_new, KDy_new, KDz_new: new derivative gains in x, y, and z directions
+         * reset: whether or not to set all gains to default values
+         * 
+        */
     if (reset) {
         KPx = 280.0; // 280.0
         KPy = 150.0; // 150.0
@@ -198,12 +255,8 @@ void printing(void){
     */
 
     if (whattoprint == 0) {
-        // serial_printf(&SerialA, "%.2f %.2f,%.2f   \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI);
-        // serial_printf(&SerialA, "Motor Thetas: %.2f %.2f %.2f \n\r", printtheta1motor*180/PI, printtheta2motor*180/PI, printtheta3motor*180/PI);
+        // Print actual (x, y, z) and desired (x, y, z)
          serial_printf(&SerialA, "Position: %.3f %.3f %.3f %.3f %.3f %.3f \n\r", x, y, z , xde, yde, zde);
-        // serial_printf(&SerialA, "IK DH Thetas: %.2f %.2f %.2f   \n\r", IKTh1*180/PI, IKTh2*180/PI, IKTh3*180/PI);
-        // serial_printf(&SerialA, "Motor Theta (IK)s: %.2f %.2f %.2f  \n\r", IKtheta1motor*180/PI, IKtheta2motor*180/PI, IKtheta3motor*180/PI );
-        // serial_printf(&SerialA, "----------------\n\r");
     } else {
         serial_printf(&SerialA, "Print test   \n\r");
     }
