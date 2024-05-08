@@ -295,9 +295,9 @@ Waypoint wp18 = {0.398, -0.054, 0.205, 9.8, -(90.0-36.87)*PI/180.0, 0.0}; // lin
 
 //* Force Step */
 Waypoint wp19 = {0.398, -0.054, 0.311, 10.5, 0.0, 0.0}; // rise above
-Waypoint wp20 = {0.240, 0.138, 0.311, 11.5, 0.0, 0.0}; // go to egg
-Waypoint wp21 = {0.240, 0.138, 0.273, 11.7, 0.0, 0.0}; // push egg
-Waypoint wp22 = {0.240, 0.138, 0.273, 13.7, 0.0, 0.0}; // hold egg
+Waypoint wp20 = {0.236, 0.142, 0.311, 11.5, 0.0, 0.0}; // go to egg
+Waypoint wp21 = {0.236, 0.142, 0.277, 11.7, 0.0, 0.0}; // push egg
+Waypoint wp22 = {0.236, 0.142, 0.277, 13.7, 0.0, 0.0}; // hold egg
 
 //* Zero Step */
 Waypoint wp23 = {0.254, 0.0, 0.508, 14.3, 0.0, 0.0}; // go to egg
